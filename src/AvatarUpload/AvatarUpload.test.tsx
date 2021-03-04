@@ -36,7 +36,7 @@ jest.mock('./slider/Slider', () => (props: any) => {
 });
 
 
-fdescribe("<AvatarUpload />", () => {
+describe("<AvatarUpload />", () => {
   const inputFile = dataURLtoFile(INPUT_IMAGE_DATA, 'testingpicture.jpeg');
   const onCropSpy = jest.fn();
 
