@@ -1,17 +1,32 @@
 import React, { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import './AvatarUpload.css'
+import Button from "./button/Button";
 import Slider from "./slider/Slider";
 import ImageVector from "./vectors/ImageVector";
-export const AvatarUpload: React.FC = () => {
+import ErrorVector from "./vectors/ErrorVector";
+import CloseButtonVector from "./vectors/CloseButtonVector";
+
+const DEFAULT_IMAGE_SCALE = 1;
+
+interface AvatarCropData {
+  rawImageURL: string;
+  croppedImageURL: string;
+}
+
+interface AvatarUploadProps {
+  onCrop: (cropData: AvatarCropData) => any;
+}
+const AvatarUpload: React.FC<AvatarUploadProps> = ({ onCrop }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [inputIsEnabled, setInputEnabled] = useState(true);
   const [highlight, setHighlight] = useState(false);
-  const [rawImageURL, setRawImageURL] = useState<string | null>(null)
+  const [imageURL, setImageURL] = useState<string | null>(null)
+  const [croppedImageURL, setCroppedImageURL] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
   const [isCropping, setIsCropping] = useState(false)
-  const [imageScale, setImageScale] = useState<number>(1);
-  const [destImageSrc, setDestImageSrc] = useState<string | null>(null);
+  const [imageScale, setImageScale] = useState<number>(DEFAULT_IMAGE_SCALE);
+
   const handleContainerClick = () => {
     const hasInputRef = fileInputRef.current !== null;
     if (hasInputRef && inputIsEnabled) { fileInputRef.current?.click() }
@@ -19,7 +34,7 @@ export const AvatarUpload: React.FC = () => {
 
   const handleFilesAdded = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files?.length) {
-      const file = event.target.files.item(0) as File
+      const file = event.target.files[0] as File
       readFileIfImage(file)
       setInputEnabled(false);
     }
@@ -43,7 +58,7 @@ export const AvatarUpload: React.FC = () => {
     if (inputIsEnabled) {
       setHighlight(false);
       if (event.dataTransfer.files.length) {
-        const file = event.dataTransfer.files.item(0) as File;
+        const file = event.dataTransfer.files[0] as File;
         readFileIfImage(file)
       }
     }
@@ -53,7 +68,7 @@ export const AvatarUpload: React.FC = () => {
     if (file.type.includes('image')) {
       const fileReader = new FileReader()
       fileReader.onload = () => {
-        setRawImageURL(fileReader.result as string);
+        setImageURL(fileReader.result as string);
         setIsCropping(true);
       }
       fileReader.readAsDataURL(file);
@@ -90,81 +105,92 @@ export const AvatarUpload: React.FC = () => {
       const cropOffsetY = scaledImage.height / 2 - croppedHeight / 2;
       ctx.drawImage(scaledImage, cropOffsetX, cropOffsetY, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
 
-      setDestImageSrc(canvas.toDataURL())
+      setCroppedImageURL(canvas.toDataURL())
     };
 
     scaledImage.src = canvas.toDataURL();
 
-
-
-
-
-
   }
 
-  // useEffect(() => {
-  //   if (rawImageURL) {
-  //     const canvas = canvasRef.current as HTMLCanvasElement;
-  //     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-
-  //     imagevent.onload = () => {
-  //       ctx?.drawImage(image,
-  //         (ctx.canvas.width - imagevent.width) / 2,
-  //         (ctx.canvas.height - imagevent.height) / 2,
-  //       )
-
-
-  //     }
-
-  //     imagevent.src = rawImageURL;
-
-  //   }
-  // }, [rawImageURL])
+  useEffect(() => {
+    if (croppedImageURL) {
+      onCrop({
+        rawImageURL: imageURL as string,
+        croppedImageURL: croppedImageURL
+      });
+      setImageURL(croppedImageURL);
+      setIsCropping(false);
+      setImageScale(DEFAULT_IMAGE_SCALE);
+      setInputEnabled(true);
+    }
+  }, [croppedImageURL])
 
   const handleSliderChange = (newScale: number) => setImageScale(newScale)
 
+
+  const handleReset = () => {
+    setInputEnabled(true);
+    setIsCropping(false);
+    setImageScale(DEFAULT_IMAGE_SCALE);
+    setHasError(false);
+    setImageURL(null);
+    setCroppedImageURL(null);
+  }
+
   return (
-    <>
-      <div className="upload-dropzone"
-        onClick={handleContainerClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        style={{
-          cursor: inputIsEnabled ? 'pointer' : 'auto',
-          border: isCropping || hasError ? 'none' : '2px dashed',
-          borderColor: highlight ? '#3F80FF' : '#C7CDD3'
-        }}>
 
-        {rawImageURL && <div className="image-container">
-          <img className="image-viewer" ref={imageRef}
-            style={{ transform: `scale(${imageScale})` }}
-            src={rawImageURL} onError={handleImageError} />
-        </div>}
+    <div className="upload-dropzone"
+      data-testid="dropzone"
+      onClick={handleContainerClick}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{
+        cursor: inputIsEnabled ? 'pointer' : 'auto',
+        borderWidth: isCropping || hasError ? 0 : 2,
+        borderStyle: 'dashed',
+        borderColor: highlight ? '#3F80FF' : '#C7CDD3'
+      }}>
 
-        {!isCropping && !hasError && <div className="upload-message">
-          <span> <ImageVector className="image" /> Organization logo</span>
-          <p>Drop the image here or click to browsevent.</p>
-          <input
-            ref={fileInputRef}
-            className="file-input"
-            type="file"
-            onChange={handleFilesAdded}
-          />
-        </div>}
+      {imageURL && !hasError && <div className="image-container">
+        <img className="image-viewer" ref={imageRef}
+          style={{ transform: `scale(${imageScale})` }}
+          src={imageURL} onError={handleImageError} />
+      </div>}
 
-        {isCropping && <div className="cropping-container">
-          <label className="cropping-label">Crop</label>
-          <Slider minValue={0.2} maxValue={2} value={imageScale} onChange={handleSliderChange} />
-          <p>
-            <button onClick={resizeAndCrop}>Save</button>
-          </p>
-          <img id="target"></img>
-        </div>}
+      {!isCropping && !hasError && <div className="upload-message">
+        <span> <ImageVector className="image" /> Organization logo</span>
+        <p>Drop the image here or click to browse.</p>
+        <input
+          data-testid="fileInput"
+          ref={fileInputRef}
+          className="file-input"
+          type="file"
+          onChange={handleFilesAdded}
+        />
+      </div>}
 
-      </div>
-      {destImageSrc && <img src={destImageSrc} />}
-    </>
+      {isCropping && <div className="cropping-container">
+        <label className="cropping-label">Crop</label>
+        <Slider minValue={0.2} maxValue={2} value={imageScale} onChange={handleSliderChange} />
+        <div className="button-container">
+          <Button onClick={resizeAndCrop}>Save</Button>
+        </div>
+      </div>}
+
+      {hasError && <>
+        <div className="error-image">
+          <ErrorVector />
+        </div>
+        <div className="error-container">
+          <span className="error-message"> Sorry, the upload failed.</span>
+          <a className="try-again" onClick={handleReset}>Try again</a>
+        </div>
+      </>}
+      {(isCropping || hasError) && <div data-testid="resetButton" className="reset-button" onClick={handleReset}><CloseButtonVector /></div>}
+    </div>
+
   );
 };
 
+export default AvatarUpload;

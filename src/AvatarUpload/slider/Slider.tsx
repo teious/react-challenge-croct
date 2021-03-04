@@ -18,7 +18,7 @@ const Slider: React.FC<SliderProps> = (props) => {
     const barRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [isSliding, setIsSliding] = useState(false);
-    const [percent, setPercent] = useState(value - minValue / maxValue - minValue);
+    const [percent, setPercent] = useState((value - minValue) / (maxValue - minValue));
     const [_value, setValue] = useState(value);
 
 
@@ -35,7 +35,8 @@ const Slider: React.FC<SliderProps> = (props) => {
 
     useEffect(() => {
         const containerElement = containerRef.current
-        if (containerElement) {
+        const barElement = barRef.current;
+        if (containerElement && barElement) {
             containerElement.addEventListener('mousedown', handleMouseDown, { passive: false });
         }
     }, [containerRef])
@@ -57,9 +58,6 @@ const Slider: React.FC<SliderProps> = (props) => {
 
     const handleMouseDown = (event: MouseEvent) => {
         event.preventDefault();
-        if (isSliding) {
-            return;
-        }
         const pointerPosition = getPointerPositionOnPage(event);
         setIsSliding(true);
         updateValueFromPosition(pointerPosition)
@@ -114,9 +112,9 @@ const Slider: React.FC<SliderProps> = (props) => {
 
 
     return (
-        <div className="slider-container" ref={containerRef}>
+        <div className="slider-container" ref={containerRef} data-testid="sliderContainer">
             <div className="slider-rail" ref={barRef}>
-                <div className="slider-track" style={{ width: `${percent * 100}%` }} >
+                <div className="slider-track" data-testid="sliderTrack" style={{ width: `${percent * 100}%` }} >
                     <div className="slider-thumb"  ></div>
                 </div>
             </div>
