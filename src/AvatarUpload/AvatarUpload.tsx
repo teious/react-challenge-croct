@@ -1,7 +1,7 @@
 import React, { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import './AvatarUpload.css'
-import Button from "./button/Button";
-import Slider from "./slider/Slider";
+import Button from "./Button/Button";
+import Slider from "./Slider/Slider";
 import ImageVector from "./vectors/ImageVector";
 import ErrorVector from "./vectors/ErrorVector";
 import CloseButtonVector from "./vectors/CloseButtonVector";
@@ -159,7 +159,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ onCrop }) => {
       </div>}
 
       {!isCropping && !hasError && <div className="upload-message">
-        <span> <ImageVector className="image" /> Organization logo</span>
+        <span> <ImageVector className="upload-vector" /> Organization logo</span>
         <p>Drop the image here or click to browse.</p>
         <input
           data-testid="fileInput"

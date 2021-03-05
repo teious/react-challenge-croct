@@ -4,7 +4,7 @@ import  AvatarUpload  from "./AvatarUpload";
 import { Meta } from "@storybook/react/types-6-0";
 
 // Primary will be the name for the first story
-export const Default: React.FC<{}> = () => {
+export const Demo: React.FC<{}> = () => {
   const [rawImage, setRawImage] = useState<string | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
 
